@@ -43,10 +43,56 @@ DayLog는 연인들이 영상통화 중 나눈 재미있고 중요한 대화의 
 ' alt="" width="">
 </h1>
 
-## 1. Couple Matching
+## 1. lottie 애니메이션 이미지 사용   
+
+- 로딩 및 화면 구성 중 lottie를 사용하여 화면을 구성하였습니다.   
+
+  <img src='./video/1_Loading.gif' alt="" width="40%">
+
+## 2. 회원가입 화면   
+
+- 유저는 회원가입의 화면을 통해 이메일, 비밀번호, 전화번호를 입력하고 아이디를 만들 수 있습니다.   
+
+  <img src='./video/2_Signup.gif' alt="" width="40%">
+
+## 3. Couple Matching   
+
 - 커플 매칭 기능   
-  : 커플 매칭은 회원가입 이후 커플 연결 코드를 통해 서로 연결됩니다.
+  : 커플 매칭은 회원가입 이후 커플 연결 코드를 통해 서로 연결됩니다.   
+   
   <img src='./readme_img/커플매칭.PNG' alt="" width="">
+
+## 4. 홈 화면   
+
+- 커플은 홈 화면에서 사귄 날짜 설정, 배경화면 설정을 할 수 있습니다.
+
+  <img src='./video/3_loginHome.gif' alt="" width="40%">
+
+## 5. 캘린더 화면
+
+- 커플은 캘린더에서 서로의 일정을 공유하거나 핫클립 확인 기능을 사용할 수 있습니다.
+
+  <img src='./video/4_Calendar.gif' alt="" width="40%">
+
+## 6. 영상통화 화면
+
+- 영상통화 화면은 lottie화면으로 구성하였고 비디오 통화에서는 화면 변경, 마이크 끄기, 카메라 전후방 변경 기능을 사용할 수 있습니다.
+
+  <img src='./video/5_videocall.gif' alt="" width="40%">
+  <img src='./video/8_videocallwithcouple.gif' alt="" width="40%">
+
+## 7. 다이어리 화면
+
+- 유저는 다이어리를 통해 서로의 일기를 작성하고 일기는 AI 그림으로 작성되어 저장됩니다.   
+
+  <img src='./video/6_Diary.gif' alt="" width="40%">
+
+
+## 8. 셋팅 화면
+
+- 공지사항, 테마, 비밀번호 설정, 로그아웃, 회원탈퇴 등의 기능을 사용할 수 있습니다.
+
+  <img src='./video/7_Setting.gif' alt="" width="40%">
 
 
 </br>  
