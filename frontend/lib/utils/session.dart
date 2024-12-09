@@ -1,0 +1,241 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:openvidu_flutter/participant/local_participant.dart';
+import 'package:openvidu_flutter/participant/remote_participant.dart';
+import 'package:openvidu_flutter/utils/custom_websocket.dart';
+import 'package:openvidu_flutter/utils/message.dart';
+
+typedef OnNotifySetRemoteMediaStreamEvent = void Function(String id);
+typedef OnAddRemoteParticipantEvent = void Function(String id);
+typedef OnRemoveRemoteParticipantEvent = void Function(String id);
+typedef OnMessageReceivedEvent = void Function(Message msg);
+typedef OnParticipantLeftEvent = void Function(String id);
+
+class Session {
+  LocalParticipant? localParticipant;
+  Map<String, RemoteParticipant> remoteParticipants = {};
+  String id;
+  String token;
+  List<Message> messages = [];
+  OnNotifySetRemoteMediaStreamEvent? onNotifySetRemoteMediaStream;
+  OnAddRemoteParticipantEvent? onAddRemoteParticipant;
+  OnRemoveRemoteParticipantEvent? onRemoveRemoteParticipant;
+  OnParticipantLeftEvent? onParticipantLeft;
+  final StreamController<Message> _messageStreamController =
+      StreamController<Message>.broadcast();
+
+  Stream<Message> get messageStream => _messageStreamController.stream;
+
+  int get unreadMessages => messages.where((msg) => !msg.isReaded).length;
+
+  final List<Map<String, List<String>>> iceServersDefault = [
+    {
+      'urls': ['stun:stun.l.google.com:19302']
+    },
+  ];
+  List<Map<String, dynamic>> iceServers = [];
+  late RTCVideoRenderer localRenderer;
+  late CustomWebSocket websocket;
+
+  Map<String, dynamic> get _configuration => {
+        'iceServers': iceServers.isEmpty ? iceServersDefault : iceServers,
+      };
+
+  Session(this.id, this.token) {
+    _initialize();
+  }
+
+  /// Initializes the WebRTC library
+  Future<void> _initialize() async {
+    await WebRTC.initialize();
+  }
+
+  /// Sets the WebSocket object
+  void setWebSocket(CustomWebSocket websocket) {
+    this.websocket = websocket;
+  }
+
+  /// Creates a local peer connection
+  Future<RTCPeerConnection> createLocalPeerConnection() async {
+    RTCPeerConnection peerConnection =
+        await createPeerConnection(_configuration);
+
+    peerConnection.onIceCandidate = (RTCIceCandidate candidate) {
+      websocket.onIceCandidate(candidate, localParticipant!.connectionId!);
+    };
+
+    peerConnection.onSignalingState = (RTCSignalingState? state) {
+      if (state == RTCSignalingState.RTCSignalingStateStable) {
+        for (var candidate in localParticipant!.iceCandidateList) {
+          peerConnection.addCandidate(candidate);
+        }
+        localParticipant!.iceCandidateList.clear();
+      }
+    };
+
+    if (localParticipant?.audioTrack != null) {
+      peerConnection.addTransceiver(
+        init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendOnly),
+        track: localParticipant!.audioTrack!,
+      );
+    }
+
+    if (localParticipant?.videoTrack != null) {
+      peerConnection.addTransceiver(
+        init: RTCRtpTransceiverInit(
+          direction: TransceiverDirection.SendOnly,
+        ),
+        track: localParticipant!.videoTrack!,
+      );
+    }
+
+    return peerConnection;
+  }
+
+  /// Creates a remote peer connection
+  Future<void> createRemotePeerConnection(String connectionId) async {
+    RTCPeerConnection peerConnection =
+        await createPeerConnection(_configuration);
+
+    peerConnection.onIceCandidate = (RTCIceCandidate candidate) {
+      websocket.onIceCandidate(candidate, connectionId);
+    };
+
+    peerConnection.onTrack = (RTCTrackEvent event) {
+      _setRemoteMediaStream(
+          event.streams[0], remoteParticipants[connectionId]!);
+    };
+
+    peerConnection.onSignalingState = (RTCSignalingState? state) {
+      if (state == RTCSignalingState.RTCSignalingStateStable) {
+        for (var candidate
+            in remoteParticipants[connectionId]!.iceCandidateList) {
+          peerConnection.addCandidate(candidate);
+        }
+        remoteParticipants[connectionId]!.iceCandidateList.clear();
+      }
+    };
+
+    peerConnection.addTransceiver(
+      kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
+      init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
+    );
+    peerConnection.addTransceiver(
+      kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
+      init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
+    );
+
+    remoteParticipants[connectionId]!.peerConnection = peerConnection;
+  }
+
+  /// Creates an offer for publishing
+  Future<void> createOfferForPublishing(
+      Map<String, dynamic> constraints) async {
+    RTCSessionDescription offer =
+        await localParticipant!.peerConnection!.createOffer(constraints);
+    await localParticipant!.peerConnection!
+        .setLocalDescription(offer)
+        .then((_) => websocket.publishVideo(offer));
+  }
+
+  /// Creates an answer for subscribing
+  Future<void> createAnswerForSubscribing(RemoteParticipant remoteParticipant,
+      String streamId, Map<String, dynamic> constraints) async {
+    RTCSessionDescription answer =
+        await remoteParticipant.peerConnection!.createAnswer(constraints);
+    await remoteParticipant.peerConnection!.setLocalDescription(answer).then(
+        (_) => websocket.receiveVideoFrom(answer, remoteParticipant, streamId));
+  }
+
+  /// Sets the ICE servers
+  void setIceServers(List<Map<String, dynamic>> iceServers) {
+    this.iceServers = iceServers;
+  }
+
+  /// Adds a remote participant
+  void addRemoteParticipant(RemoteParticipant remoteParticipant) {
+    remoteParticipants[remoteParticipant.connectionId!] = remoteParticipant;
+    _checkParticipantCount();
+  }
+
+  /// Removes a remote participant
+  Future<void> removeRemoteParticipant(String id) async {
+    await remoteParticipants[id]?.renderer.dispose();
+    await remoteParticipants.remove(id)?.dispose();
+    _checkParticipantCount();
+    if (onRemoveRemoteParticipant != null) {
+      onRemoveRemoteParticipant!(id);
+    }
+    // 상대방이 나갔을 때 이벤트 발생
+    if (onParticipantLeft != null) {
+      onParticipantLeft!(id);
+    }
+  }
+
+  void _checkParticipantCount() {
+    if (remoteParticipants.isNotEmpty) {
+      if (localParticipant != null) {
+        localParticipant!.startFrameCapture();
+        localParticipant!.startAudioRecord();
+      }
+    }
+  }
+
+  /// Leaves the session
+  void leaveSession() async {
+    if (localParticipant != null) {
+      localParticipant!.stopFrameCapture();
+      localParticipant!.stopAudioRecord();
+      await localParticipant!.dispose();
+    }
+
+    for (var remoteParticipant in remoteParticipants.values) {
+      await remoteParticipant.dispose();
+    }
+
+    websocket.leaveRoom();
+    await websocket.disconnect();
+  }
+
+  void addMessageReceived(Map<String, dynamic> params) {
+    var data = jsonDecode(params['data']);
+    final isMe = localParticipant?.participantName == data['nickname'];
+    var msg = Message(
+      data['message'],
+      params['from'],
+      data['nickname'],
+      DateTime.now(),
+      isMe,
+      isMe,
+    );
+    messages.add(msg);
+    _messageStreamController.add(msg);
+  }
+
+  // Remote 미디어 스트림 인원 2명 이상일 때에만 미디어 영상을 보내도록 설정함
+  void _setRemoteMediaStream(
+      MediaStream stream, RemoteParticipant participant) {
+    participant.mediaStream = stream;
+    participant.renderer.initialize().then((value) {
+      participant.renderer.srcObject = stream;
+      if (onNotifySetRemoteMediaStream != null) {
+        onNotifySetRemoteMediaStream!(participant.connectionId!);
+      }
+    });
+  }
+
+  /// Toggles the local audio
+  void localToggleAudio() {
+    localParticipant!.toggleAudio();
+    websocket.changeStreamAudio(
+        localParticipant!.connectionId!, localParticipant!.isAudioActive);
+  }
+
+  /// Toggles the local video
+  void localToggleVideo() {
+    localParticipant!.toggleVideo();
+    websocket.changeStreamVideo(
+        localParticipant!.connectionId!, localParticipant!.isVideoActive);
+  }
+}

@@ -1,0 +1,70 @@
+name: openvidu_flutter
+description: "Migration from openvidu-android to Flutter. The package contains a working example that targets OpenVidu 2.29.0."
+version: 0.0.11
+homepage: https://github.com/galanblancom/openvidu-flutter
+
+environment:
+  sdk: ">=3.3.3 <4.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  html: ^0.15.4
+  flutter_webrtc: ^0.10.6
+  crypto: ^3.0.3
+  logging: ^1.2.0
+  intl: ^0.19.0
+  path_provider: ^2.0.11
+  image: ^4.2.0
+  flutter_sound: ^9.8.1
+  flutter_sound_platform_interface: ^9.2.13
+  flutter_sound_web: ^9.2.13
+  http: ^0.13.4
+  firebase_core: ^3.3.0
+  firebase_messaging: ^15.0.4
+  shared_preferences: ^2.2.3 # 추가된 의존성
+  dotted_border: ^2.1.0
+  flutter_color: ^2.1.0
+  palette_generator: ^0.3.0
+  mime: ^1.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  # To add assets to your package, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+  #
+  # For details regarding assets in packages, see
+  # https://flutter.dev/assets-and-images/#from-packages
+  #
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # To add custom fonts to your package, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  # For details regarding fonts in packages, see
+  # https://flutter.dev/custom-fonts/#from-packages

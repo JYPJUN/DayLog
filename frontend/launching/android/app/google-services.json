@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "645036786953",
+    "project_id": "daylog-ssafy",
+    "storage_bucket": "daylog-ssafy.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:645036786953:android:9eca3750dac370d0ff7fd8",
+        "android_client_info": {
+          "package_name": "com.example.openviduflutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrMo0QfLiTFpGMZWx4tjB0xcJEyblg63Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
